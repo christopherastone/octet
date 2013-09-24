@@ -4,9 +4,8 @@ LDFLAGS  = -lpthread
 SOFLAGS  = -shared
 
 LIBOCTET_STATIC = liboctet.a
-LIBOCTET_SHARED = liboctet.so
 
-all: $(LIBOCTET_STATIC) $(LIBOCTET_SHARED) stresstest
+all: $(LIBOCTET_STATIC) stresstest
 
 stresstest: stresstest.o $(LIBOCTET_STATIC)
 	$(CXX) $(CXXFLAGS) -o stresstest $(LDFLAGS) stresstest.o -L. -loctet
@@ -17,9 +16,6 @@ clean:
 $(LIBOCTET_STATIC): octet.o
 	$(AR) cru $@ $^
 	ranlib $@
-
-$(LIBOCTET_SHARED): octet.o
-	$(CXX) $(CXXFLAGS) $(SOFLAGS) $(LDFLAGS) -shared -o $(LIBOCTET_SHARED) $^
 
 
 # Generated from clang++ -MM *.cpp -std=c++11 -stdlib=libc++

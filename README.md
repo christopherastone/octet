@@ -35,8 +35,6 @@ Notes
       * All threads use the same "Intermediate" flag value.
       * I have added an explicit unlocking operation for testing purposes.
 
-
-   * This code was tested only on MAC OS X (10.8), and even there only with
-     a relatively simple stress test.
-
+   * The code is written in C++11, and runs on Mac OS X and Linux
+     (assuming clang++ is installed).
 
