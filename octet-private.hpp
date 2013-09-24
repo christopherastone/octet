@@ -55,8 +55,8 @@ namespace octet {
         return restart;
     }
 
-    int OCTET_BACKOFF_RETRIES = 5;
-    int OCTET_BACKOFF_EXPLIMIT = 13;
+    const int OCTET_BACKOFF_RETRIES = 5;
+    const int OCTET_BACKOFF_EXPLIMIT = 13;
     
     // Note: only guarantees that all the given locks are locked.
     //       Does not say whether we might have lost other locks
