@@ -24,17 +24,30 @@ for detailed background, but to quote from the latter:
 > access to the lock.
 
 
-Notes
+This code was written based on the descriptions in the above papers, rather than
+starting from the official OCTET source code, which is now available in the form of
+[a patch for the Jikes RVM](http://sourceforge.net/p/jikesrvm/research-archive/43/).
+Further, there are a few *intentional* differences from the OCTET paper:
 
-   * This code was written based on the descriptions in the above papers, and
-     thus may or may not be a faithful implementation.
+   * The global/thread-local counters for Read-Shared locks were
+     elided, and compensating synchronization was added.
+   * All threads use an identical "Intermediate" flag value.
+   * I added an explicit unlocking operation, because it speeds up the stress test
+     in certain situations.
 
-   * There are a few intentional differences from the OCTET paper
-      * The global/thread-local counters for Read-Shared locks have
-        been elided. This requires compensating synchronization.
-      * All threads use the same "Intermediate" flag value.
-      * I have added an explicit unlocking operation for testing purposes.
+The code is written in C++11, and the stress test has been compiled and run on
+Mac OS X and on Linux (assuming clang++ is installed).
 
-   * The code is written in C++11, and runs on Mac OS X and Linux
-     (assuming clang++ is installed).
+__Acknowledgements__
+
+This code was developed for experimental and exploratory purposes within the
+[Observationally Cooperative Multithreading](http://ocm-model.org/) research
+project, and so we gratefully acknowledge that this material is based upon work
+supported by the National Science Foundation under Grant No. 1219243. Any
+opinions, findings, and conclusions or recommendations expressed in this
+material are those of the author(s) and do not necessarily reflect the views of
+the National Science Foundation.
+
+We are also grateful to Mike Bond for answering a few questions about OCTET
+barriers.
 

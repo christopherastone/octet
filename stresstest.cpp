@@ -1,16 +1,23 @@
-// stresstest.cpp
-//
-// Uses octet locks as lightweight locks, with potentially heavy contention.
-//
-//  Creates an array of "accounts" all initially 0
-//  Threads repeatedly choose
-//     one to increment; one to decrement; one to just read
-//
-//  At the end, the sum of all accounts should be zero
-//  (if the locks are enforcing mutual exclusion!)
-//
-//  Compile-time flags let us run the same test with octet vs. pthreads
-//  (recursive) locks, remove all contention, etc.
+/*
+ * octet.hpp
+ *
+ * Locks modeled on the "Octet" barriers of Bond et al.
+ *    "OCTET: Capturing and Controlling Cross-Thread Dependencies Efficiently"
+ *
+ * Uses octet locks as lightweight locks, with potentially heavy contention.
+ *
+ *    Creates an array of "accounts" all initially 0
+ *    Threads repeatedly choose
+ *          one to increment; one to decrement; one to just read
+ *    At the end, the sum of all accounts should be zero
+ *          (if the locks are correctly enforcing mutual exclusion!)
+ *
+ *  Compile-time flags let us run and time the same test with
+ *     octet vs. pthreads (recursive) locks, removing all contention, etc.
+ *
+ * Author: Christopher A. Stone <stone@cs.hmc.edu>
+ *
+ */
 
 ///////////////////
 // CONTROL FLAGS //
@@ -35,6 +42,7 @@
 //   If 1, we choose 2-3 random accounts per iteration, randomly
 //   If 0, thread i gets accounts 30i+1
 //              (no contention, and no false (data) sharing.
+//         Make sure there are enough accounts!
 #define CONTENTION 1
 
 // OCTET_UNLOCK

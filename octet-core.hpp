@@ -1,10 +1,14 @@
-//  octet-core.hpp
-
-#ifndef OCTET_CORE_H
-#define OCTET_CORE_H
+/*
+ * octet-core.hpp
+ *
+ * Locks modeled on the "Octet" barriers of Bond et al.
+ *    "OCTET: Capturing and Controlling Cross-Thread Dependencies Efficiently"
+ *
+ * Author: Christopher A. Stone <stone@cs.hmc.edu>
+ *
+ */
 
 #include <atomic>
-
 
 /////////////////////////
 
@@ -57,11 +61,11 @@
 
 namespace octet {
 
-    
+
     /////////////////////////
     // Types
-    
-    
+
+
     // OctetThreadInfo
     //
     // Each thread maintains exactly one of these objects (in the thread-local
@@ -82,21 +86,21 @@ namespace octet {
     //   Item (2) occupies the low bit (to get the flag, must "& 1")
     // This limits us to 2 billion lock requests. If it's a problem, we can
     // switch to 63-bit counters...
-    
+
     struct OctetThreadInfo {
         std::atomic<uint32_t> requests_;  // 31 bit count + 1 bit "blocked" flag.
         char padding[64 - sizeof(requests_)];
         std::atomic<uint32_t> responses_;
-        
+
         OctetThreadInfo( bool startBlocked = false );
-        
+
         void handleRequests( bool shouldBlock );
         void unblock();
-        
+
     };
 
     extern __thread OctetThreadInfo* myThreadInfo;
-    
+
 
     // octetLockState_t
     //
@@ -119,32 +123,32 @@ namespace octet {
     //
     using octetLock_t = std::atomic<octetLockState_t>;
 
-    
+
     // The following macros are useful for octetLockState_t values.
     //  * WrEx(T): Thread T may read or write the object without changing the state.
     //  * RdEx(T): T may read but not write the object without changing the state.
     //  * RdSh   : Any thread may read but not write the object without changing
     //                the state.
-    
+
 #define RDSH         0L
 #define INTERMEDIATE 1L
 #define WREX(T)      (reinterpret_cast<octetLockState_t>(T))
 #define RDEX(T)      (reinterpret_cast<octetLockState_t>(T) | 0x1)
-    
+
 #define GET_TID(X)   (reinterpret_cast<OctetThreadInfo*>((X) & ~1))
 #define IS_WREX(X)   ((X) != 0L && ((X) & 0x1) == 0)
 #define IS_RDEX(X)   ((X) != 1L && ((X) & 0x1) != 0)
 #define IS_RDSH(X)   ((X) == RDSH)
-    
-    
 
-    
+
+
+
     /////////////////////////////
     // Inline methods start here
     /////////////////////////////
-    
+
     // Declare internal variables/functions used by the inline methods
-    
+
 #if STATISTICS
     extern __thread size_t writeBarriers;
     extern __thread size_t slowWrites;
@@ -156,8 +160,8 @@ namespace octet {
     bool writeSlowPath( octetLock_t* objLock );
 
     int atomic_printf(const char *format, ...);
-    
-    
+
+
     // writeBarrier
     //
     //  Locks the given lock in WrEx mode.
@@ -171,31 +175,31 @@ namespace octet {
 #if STATISTICS
         ++writeBarriers;
 #endif
-        
+
         octetLockState_t goalState = WREX(myThreadInfo);
-        
+
         // Memory order: if we find the value we're looking for, it could only
         //    be this thread who wrote it, so there are no cross-thread memory
         //    issues. If we don't see the value we're looking for, the CAS in
         //    the slow path will make sure we will get up-to-date data.
         octetLockState_t curState =
             objLock->load( MEM_ORD( std::memory_order_relaxed ) );
-        
+
         if ( curState != goalState)  {
             TRACE("Thread 0x%x on slow path to write-lock 0x%x\n",
                   myThreadInfo, objLock);
-            
+
             return writeSlowPath( objLock );
         }
-        
+
         TRACE("Thread 0x%x took fast path to write-lock 0x%x\n",
               myThreadInfo, objLock);
-        
+
         // The fast path never grants any requests from other threads.
         return false;
     }
 
-    
+
     // readBarrier
     //
     //  Locks the given lock in RdEx or RdSh mode, as appropriate.
@@ -206,45 +210,45 @@ namespace octet {
     //
     inline bool readBarrier( octetLock_t* objLock )
     {
-        
+
 #if READSHARED
-        
+
 #if STATISTICS
         ++readBarriers;
 #endif
-        
+
         // Memory order: if we find our own thread in the lock, it could only
         //    be this thread who wrote it, so there are no cross-thread memory
         //    issues. If we don't see the value we're looking for, the CAS in
         //    the slow path will make sure we will get up-to-date data.
         //
         octetLockState_t curState = objLock->load();
-        
+
         if ( GET_TID(curState) != myThreadInfo ) {
-            
+
             if ( curState == RDSH ) {
-                
+
                 // Memory order:
                 //    On the other hand, if we see RdSh, it could have been written
                 //    by another thread. We don't have to take the full slow path,
                 //    but we do want to make sure that we see any changes to the data
                 //    that happened-before that thread switched the data to RdSh
-                
+
                 std::atomic_thread_fence( std::memory_order_acquire );
-                
+
             } else {
-                
+
                 TRACE("Thread 0x%x on slow path to read-lock 0x%x\n",
                       myThreadInfo, objLock);
-                
+
                 return readSlowPath( objLock );
-                
+
             }
         }
-        
+
         TRACE("Thread 0x%x took fast path to read-lock 0x%x\n",
               myThreadInfo, objLock);
-        
+
         // The fast path never grants any requests from other threads.
         return false;
 
@@ -253,12 +257,13 @@ namespace octet {
         // If we don't distinguish between read locking and write locking,
         // then read and write barriers are the same.
         return writeBarrier( objLock );
-        
-#endif // READSHARED
-    
-    }
-    
 
-    
+#endif // READSHARED
+
+    }
+
+
+
 } // namespace octet
-#endif
+
+
